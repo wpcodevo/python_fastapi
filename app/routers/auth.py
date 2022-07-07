@@ -1,7 +1,6 @@
 import base64
 from datetime import timedelta
 from typing import List
-from urllib import response
 from fastapi import APIRouter, Request, Response, status, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 
