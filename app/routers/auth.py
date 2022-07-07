@@ -48,7 +48,7 @@ async def create_user(payload: schemas.CreateUserSchema, db: Session = Depends(g
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail='Passwords do not match')
     #  Hash the password
-    payload.password = utils.hash(payload.password)
+    payload.password = utils.hash_password(payload.password)
     del payload.passwordConfirm
     payload.role = 'user'
     payload.verified = True
