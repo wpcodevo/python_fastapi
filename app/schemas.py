@@ -27,3 +27,25 @@ class UserResponse(UserBaseSchema):
     id: str
     created_at: datetime
     updated_at: datetime
+
+
+class PostBaseSchema(BaseModel):
+    title: str
+    content: str
+    category: str
+    image: str
+    user_id: str | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class CreatePostSchema(PostBaseSchema):
+    pass
+
+
+class PostResponse(PostBaseSchema):
+    id: str
+    user: UserResponse
+    created_at: datetime
+    updated_at: datetime
