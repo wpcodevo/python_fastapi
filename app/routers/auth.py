@@ -61,11 +61,11 @@ def login(payload: schemas.LoginUserSchema, response: Response, db: Session = De
 
     # Create access token
     access_token = Authorize.create_access_token(
-        subject=user.id, expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
+        subject=str(user.id), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
 
     # Create refresh token
     refresh_token = Authorize.create_refresh_token(
-        subject=user.id, expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN))
+        subject=str(user.id), expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN))
 
     # Store refresh and access tokens in cookie
     response.set_cookie('access_token', access_token, ACCESS_TOKEN_EXPIRES_IN * 60,
@@ -82,7 +82,6 @@ def login(payload: schemas.LoginUserSchema, response: Response, db: Session = De
 @router.get('/refresh')
 def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     try:
-        print(Authorize._refresh_cookie_key)
         Authorize.jwt_refresh_token_required()
 
         user_id = Authorize.get_jwt_subject()
@@ -94,7 +93,7 @@ def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Dep
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail='The user belonging to this token no logger exist')
         access_token = Authorize.create_access_token(
-            subject=user_id, expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
+            subject=str(user.id), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
     except Exception as e:
         error = e.__class__.__name__
         if error == 'MissingTokenError':
