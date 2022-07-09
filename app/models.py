@@ -1,3 +1,4 @@
+import uuid
 from .database import Base
 from sqlalchemy import TIMESTAMP, Column, String, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID
@@ -5,8 +6,8 @@ from sqlalchemy.dialects.postgresql import UUID
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(UUID, primary_key=True, nullable=False,
-                server_default=text("uuid_generate_v4()"))
+    id = Column(UUID(as_uuid=True), primary_key=True, nullable=False,
+                default=uuid.uuid4)
     name = Column(String,  nullable=False)
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)

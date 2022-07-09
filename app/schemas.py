@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from pydantic import BaseModel, EmailStr, constr
 
 
@@ -24,6 +25,6 @@ class LoginUserSchema(BaseModel):
 
 
 class UserResponse(UserBaseSchema):
-    id: str
+    id: uuid.UUID
     created_at: datetime
     updated_at: datetime
