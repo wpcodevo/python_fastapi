@@ -1,9 +1,6 @@
-import base64
 from datetime import timedelta
-from typing import List
-from urllib import response
 from fastapi import APIRouter, Request, Response, status, Depends, HTTPException
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
 
 from app import oauth2
 from .. import schemas, models, utils
@@ -11,23 +8,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from app.oauth2 import AuthJWT
 from ..config import settings
-
-
-class Settings(BaseModel):
-    authjwt_algorithm: str = settings.JWT_ALGORITHM
-    authjwt_decode_algorithms: List[str] = [settings.JWT_ALGORITHM]
-    authjwt_token_location: set = {'cookies', 'headers'}
-    authjwt_access_cookie_key: str = 'access_token'
-    authjwt_refresh_cookie_key: str = 'refresh_token'
-    authjwt_public_key: str = base64.b64decode(
-        settings.JWT_PUBLIC_KEY).decode('utf-8')
-    authjwt_private_key: str = base64.b64decode(
-        settings.JWT_PRIVATE_KEY).decode('utf-8')
-
-
-@AuthJWT.load_config
-def get_config():
-    return Settings()
 
 
 router = APIRouter()
@@ -48,7 +28,7 @@ async def create_user(payload: schemas.CreateUserSchema, db: Session = Depends(g
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail='Passwords do not match')
     #  Hash the password
-    payload.password = utils.hash(payload.password)
+    payload.password = utils.hash_password(payload.password)
     del payload.passwordConfirm
     payload.role = 'user'
     payload.verified = True

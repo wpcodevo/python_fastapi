@@ -1,5 +1,3 @@
-from unicodedata import category
-from uuid import UUID
 from .database import Base
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID
