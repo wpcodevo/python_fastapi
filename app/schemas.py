@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 import uuid
 from pydantic import BaseModel, EmailStr, constr
 
@@ -30,6 +31,10 @@ class UserResponse(UserBaseSchema):
     updated_at: datetime
 
 
+class FilteredUserResponse(UserBaseSchema):
+    pass
+
+
 class PostBaseSchema(BaseModel):
     title: str
     content: str
@@ -44,9 +49,24 @@ class PostBaseSchema(BaseModel):
 class CreatePostSchema(PostBaseSchema):
     pass
 
+class UpdatePostSchema(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    category: str | None = None
+    image: str | None = None
+
+    class Config:
+        orm_mode = True
+
 
 class PostResponse(PostBaseSchema):
     id: uuid.UUID
-    user: UserResponse
+    user: FilteredUserResponse
     created_at: datetime
     updated_at: datetime
+
+
+class ListPostResponse(BaseModel):
+    status: str
+    results: int
+    posts: List[PostResponse]
