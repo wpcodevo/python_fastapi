@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from app.oauth2 import AuthJWT
 from ..config import settings
+from ..email import Email
 
 
 router = APIRouter()
@@ -15,8 +16,8 @@ ACCESS_TOKEN_EXPIRES_IN = settings.ACCESS_TOKEN_EXPIRES_IN
 REFRESH_TOKEN_EXPIRES_IN = settings.REFRESH_TOKEN_EXPIRES_IN
 
 
-@router.post('/register', status_code=status.HTTP_201_CREATED, response_model=schemas.UserResponse)
-async def create_user(payload: schemas.CreateUserSchema, db: Session = Depends(get_db)):
+@router.post('/register', status_code=status.HTTP_201_CREATED)
+async def create_user(payload: schemas.CreateUserSchema, request: Request, db: Session = Depends(get_db)):
     # Check if user already exist
     user = db.query(models.User).filter(
         models.User.email == EmailStr(payload.email.lower())).first()
@@ -31,13 +32,22 @@ async def create_user(payload: schemas.CreateUserSchema, db: Session = Depends(g
     payload.password = utils.hash_password(payload.password)
     del payload.passwordConfirm
     payload.role = 'user'
-    payload.verified = True
+    payload.verified = False
     payload.email = EmailStr(payload.email.lower())
     new_user = models.User(**payload.dict())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+
+    try:
+        token = oauth2.create_verification_token(str(new_user.id))
+        url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/api/auth/verifyemail/{token}"
+        await Email(new_user, url, [payload.email]).sendVerificationCode()
+    except Exception as error:
+        print('Error', error)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail='There was an error sending email')
+    return {'status': 'success', 'message': 'Verification token successfully sent to your email'}
 
 
 @router.post('/login')
@@ -115,3 +125,19 @@ def logout(response: Response, Authorize: AuthJWT = Depends(), user_id: str = De
     response.set_cookie('logged_in', '', -1)
 
     return {'status': 'success'}
+
+
+@router.get('/verifyemail/{token}')
+def verify_me(token: str, db: Session = Depends(get_db)):
+    id = oauth2.verify_email_token(token)
+    user_query = db.query(models.User).filter(models.User.id == id)
+    user = user_query.first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='User no longer exist')
+    user_query.update({'verified': True}, synchronize_session=False)
+    db.commit()
+    return {
+        "status": "success",
+        "message": "Account verified successfully"
+    }
