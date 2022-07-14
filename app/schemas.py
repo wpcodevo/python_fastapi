@@ -32,7 +32,7 @@ class UserResponse(UserBaseSchema):
 
 
 class FilteredUserResponse(UserBaseSchema):
-    pass
+    id: uuid.UUID
 
 
 class PostBaseSchema(BaseModel):
@@ -49,21 +49,23 @@ class PostBaseSchema(BaseModel):
 class CreatePostSchema(PostBaseSchema):
     pass
 
-class UpdatePostSchema(BaseModel):
-    title: str | None = None
-    content: str | None = None
-    category: str | None = None
-    image: str | None = None
-
-    class Config:
-        orm_mode = True
-
 
 class PostResponse(PostBaseSchema):
     id: uuid.UUID
     user: FilteredUserResponse
     created_at: datetime
     updated_at: datetime
+
+
+class UpdatePostSchema(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    category: str | None = None
+    image: str | None = None
+    user_id: uuid.UUID | None = None
+
+    class Config:
+        orm_mode = True
 
 
 class ListPostResponse(BaseModel):

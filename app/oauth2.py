@@ -1,10 +1,8 @@
 import base64
-from datetime import datetime, timedelta
 from typing import List
 from fastapi import Depends, HTTPException, status
 from fastapi_jwt_auth import AuthJWT
 from pydantic import BaseModel
-from jose import jwt, JWTError
 
 from . import models
 from .database import get_db
@@ -64,29 +62,4 @@ def require_user(db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
                 status_code=status.HTTP_401_UNAUTHORIZED, detail='Please verify your account')
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail='Token is invalid or has expired')
-    return user_id
-
-
-def create_verification_token(user_id: str):
-    expires = datetime.utcnow() + timedelta(minutes=30)
-    payload = {'user_id': user_id, 'exp': expires}
-    return jwt.encode(payload, settings.VERIFICATION_SECRET, algorithm='HS256')
-
-
-def verify_email_token(token: str):
-    try:
-        decoded = jwt.decode(
-            token, settings.VERIFICATION_SECRET, algorithms=['HS256'])
-        user_id = decoded.get('user_id')
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail='Could not verify user')
-    except JWTError as e:
-        error = e.__class__.__name__
-        print(error)
-        if error == 'ExpiredSignatureError':
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Token is invalid or has expired')
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail='Could not verify user')
     return user_id
