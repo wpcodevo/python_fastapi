@@ -3,3 +3,7 @@
 ### 1. RESTful API with Python & FastAPI: Access and Refresh Tokens
 
 [RESTful API with Python & FastAPI: Access and Refresh Tokens](https://codevoweb.com/restful-api-with-python-fastapi-access-and-refresh-tokens)
+
+### 2. RESTful API with Python & FastAPI: Send HTML Emails
+
+[RESTful API with Python & FastAPI: Send HTML Emails](https://codevoweb.com/restful-api-with-python-fastapi-send-html-emails)
