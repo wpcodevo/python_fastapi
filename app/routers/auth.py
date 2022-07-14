@@ -1,4 +1,6 @@
 from datetime import timedelta
+import hashlib
+from random import randbytes
 from fastapi import APIRouter, Request, Response, status, Depends, HTTPException
 from pydantic import EmailStr
 
@@ -19,8 +21,9 @@ REFRESH_TOKEN_EXPIRES_IN = settings.REFRESH_TOKEN_EXPIRES_IN
 @router.post('/register', status_code=status.HTTP_201_CREATED)
 async def create_user(payload: schemas.CreateUserSchema, request: Request, db: Session = Depends(get_db)):
     # Check if user already exist
-    user = db.query(models.User).filter(
-        models.User.email == EmailStr(payload.email.lower())).first()
+    user_query = db.query(models.User).filter(
+        models.User.email == EmailStr(payload.email.lower()))
+    user = user_query.first()
     if user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail='Account already exist')
@@ -40,11 +43,21 @@ async def create_user(payload: schemas.CreateUserSchema, request: Request, db: S
     db.refresh(new_user)
 
     try:
-        token = oauth2.create_verification_token(str(new_user.id))
-        url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/api/auth/verifyemail/{token}"
+        # Send Verification Email
+        token = randbytes(10)
+        hashedCode = hashlib.sha256()
+        hashedCode.update(token)
+        verification_code = hashedCode.hexdigest()
+        user_query.update(
+            {'verification_code': verification_code}, synchronize_session=False)
+        db.commit()
+        url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/api/auth/verifyemail/{token.hex()}"
         await Email(new_user, url, [payload.email]).sendVerificationCode()
     except Exception as error:
         print('Error', error)
+        user_query.update(
+            {'verification_code': None}, synchronize_session=False)
+        db.commit()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail='There was an error sending email')
     return {'status': 'success', 'message': 'Verification token successfully sent to your email'}
@@ -129,13 +142,18 @@ def logout(response: Response, Authorize: AuthJWT = Depends(), user_id: str = De
 
 @router.get('/verifyemail/{token}')
 def verify_me(token: str, db: Session = Depends(get_db)):
-    id = oauth2.verify_email_token(token)
-    user_query = db.query(models.User).filter(models.User.id == id)
+    hashedCode = hashlib.sha256()
+    hashedCode.update(bytes.fromhex(token))
+    verification_code = hashedCode.hexdigest()
+    user_query = db.query(models.User).filter(
+        models.User.verification_code == verification_code)
+    db.commit()
     user = user_query.first()
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail='User no longer exist')
-    user_query.update({'verified': True}, synchronize_session=False)
+            status_code=status.HTTP_403_FORBIDDEN, detail='Email can only be verified once')
+    user_query.update(
+        {'verified': True, 'verification_code': None}, synchronize_session=False)
     db.commit()
     return {
         "status": "success",
