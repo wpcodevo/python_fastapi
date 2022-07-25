@@ -58,11 +58,13 @@ class PostResponse(PostBaseSchema):
 
 
 class UpdatePostSchema(BaseModel):
-    title: str | None = None
-    content: str | None = None
-    category: str | None = None
-    image: str | None = None
+    title: str
+    content: str
+    category: str
+    image: str
     user_id: uuid.UUID | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         orm_mode = True

@@ -1,3 +1,4 @@
+from datetime import datetime
 import uuid
 from .. import schemas, models
 from sqlalchemy.orm import Session
@@ -30,17 +31,20 @@ def create_post(post: schemas.CreatePostSchema, db: Session = Depends(get_db), o
 @router.put('/{id}', response_model=schemas.PostResponse)
 def update_post(id: str, post: schemas.UpdatePostSchema, db: Session = Depends(get_db), user_id: str = Depends(require_user)):
     post_query = db.query(models.Post).filter(models.Post.id == id)
-    updated_post = post_query.first()
+    db_post = post_query.first()
 
-    if not updated_post:
+    if not db_post:
         raise HTTPException(status_code=status.HTTP_200_OK,
                             detail=f'No post with this id: {id} found')
-    if updated_post.user_id != uuid.UUID(user_id):
+    if db_post.user_id != uuid.UUID(user_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='You are not allowed to perform this action')
-    post_query.update(post.dict(), synchronize_session=False)
+    post.user_id = db_post.user_id
+    post.created_at = db_post.created_at
+    post.updated_at = datetime.utcnow()
+    post_query.update(post.dict(exclude_none=True), synchronize_session=False)
     db.commit()
-    return updated_post
+    return db_post
 
 
 @router.get('/{id}', response_model=schemas.PostResponse)
@@ -59,10 +63,6 @@ def delete_post(id: str, db: Session = Depends(get_db), user_id: str = Depends(r
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f'No post with this id: {id} found')
-
-    if post.owner_id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                            detail='You are not allowed to perform this action')
     post_query.delete(synchronize_session=False)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
