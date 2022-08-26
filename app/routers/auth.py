@@ -151,6 +151,9 @@ def verify_me(token: str, db: Session = Depends(get_db)):
     user = user_query.first()
     if not user:
         raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid code or user doesn't exist")
+    if user.verified:
+        raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail='Email can only be verified once')
     user_query.update(
         {'verified': True, 'verification_code': None}, synchronize_session=False)
