@@ -13,7 +13,6 @@ class User(Base):
     password = Column(String, nullable=False)
     photo = Column(String, nullable=True)
     verified = Column(Boolean, nullable=False, server_default='False')
-    verification_code = Column(String, nullable=True, unique=True)
     role = Column(String, server_default='user', nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
