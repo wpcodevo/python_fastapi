@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import user, auth, post
+from app.routers import project, user, auth
 
 app = FastAPI()
 
@@ -20,7 +20,7 @@ app.add_middleware(
 
 app.include_router(auth.router, tags=['Auth'], prefix='/api/auth')
 app.include_router(user.router, tags=['Users'], prefix='/api/users')
-app.include_router(post.router, tags=['Posts'], prefix='/api/posts')
+app.include_router(project.router, tags=['Posts'], prefix='/api/projects')
 
 
 @app.get('/api/healthchecker')

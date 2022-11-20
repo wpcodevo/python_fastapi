@@ -1,8 +1,6 @@
 from datetime import timedelta
 import hashlib
-from random import randbytes
 from fastapi import APIRouter, Request, Response, status, Depends, HTTPException
-from pydantic import EmailStr
 
 from app import oauth2
 from .. import schemas, models, utils
@@ -10,7 +8,6 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from app.oauth2 import AuthJWT
 from ..config import settings
-from ..email import Email
 
 
 router = APIRouter()
@@ -22,7 +19,7 @@ REFRESH_TOKEN_EXPIRES_IN = settings.REFRESH_TOKEN_EXPIRES_IN
 async def create_user(payload: schemas.CreateUserSchema, request: Request, db: Session = Depends(get_db)):
     # Check if user already exist
     user_query = db.query(models.User).filter(
-        models.User.email == EmailStr(payload.email.lower()))
+        models.User.username == payload.username.lower())
     user = user_query.first()
     if user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
@@ -34,53 +31,28 @@ async def create_user(payload: schemas.CreateUserSchema, request: Request, db: S
     #  Hash the password
     payload.password = utils.hash_password(payload.password)
     del payload.passwordConfirm
-    payload.role = 'user'
-    payload.verified = False
-    payload.email = EmailStr(payload.email.lower())
     new_user = models.User(**payload.dict())
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    try:
-        # Send Verification Email
-        token = randbytes(10)
-        hashedCode = hashlib.sha256()
-        hashedCode.update(token)
-        verification_code = hashedCode.hexdigest()
-        user_query.update(
-            {'verification_code': verification_code}, synchronize_session=False)
-        db.commit()
-        url = f"{request.url.scheme}://{request.client.host}:{request.url.port}/api/auth/verifyemail/{token.hex()}"
-        await Email(new_user, url, [payload.email]).sendVerificationCode()
-    except Exception as error:
-        print('Error', error)
-        user_query.update(
-            {'verification_code': None}, synchronize_session=False)
-        db.commit()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail='There was an error sending email')
-    return {'status': 'success', 'message': 'Verification token successfully sent to your email'}
+    return {'status': 'success', 'message': 'Verification token successfully'}
 
 
 @router.post('/login')
 def login(payload: schemas.LoginUserSchema, response: Response, db: Session = Depends(get_db), Authorize: AuthJWT = Depends()):
     # Check if the user exist
     user = db.query(models.User).filter(
-        models.User.email == EmailStr(payload.email.lower())).first()
+        models.User.username == payload.username.lower()).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Incorrect Email or Password')
+                            detail='Incorrect Username or Password')
 
-    # Check if user verified his email
-    if not user.verified:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Please verify your email address')
-
+   
     # Check if the password is valid
     if not utils.verify_password(payload.password, user.password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Incorrect Email or Password')
+                            detail='Incorrect Username or Password')
 
     # Create access token
     access_token = Authorize.create_access_token(
@@ -138,24 +110,3 @@ def logout(response: Response, Authorize: AuthJWT = Depends(), user_id: str = De
     response.set_cookie('logged_in', '', -1)
 
     return {'status': 'success'}
-
-
-@router.get('/verifyemail/{token}')
-def verify_me(token: str, db: Session = Depends(get_db)):
-    hashedCode = hashlib.sha256()
-    hashedCode.update(bytes.fromhex(token))
-    verification_code = hashedCode.hexdigest()
-    user_query = db.query(models.User).filter(
-        models.User.verification_code == verification_code)
-    db.commit()
-    user = user_query.first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail='Email can only be verified once')
-    user_query.update(
-        {'verified': True, 'verification_code': None}, synchronize_session=False)
-    db.commit()
-    return {
-        "status": "success",
-        "message": "Account verified successfully"
-    }

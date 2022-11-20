@@ -1,6 +1,6 @@
 import uuid
 from .database import Base
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, Boolean, text
+from sqlalchemy import TIMESTAMP, Column, ForeignKey, String, Boolean, text,Float, Integer,DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -10,28 +10,25 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False,
                 default=uuid.uuid4)
     name = Column(String,  nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    username = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
-    photo = Column(String, nullable=True)
-    verified = Column(Boolean, nullable=False, server_default='False')
-    verification_code = Column(String, nullable=True, unique=True)
-    role = Column(String, server_default='user', nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
 
 
-class Post(Base):
-    __tablename__ = 'posts'
+class Project(Base):
+    __tablename__ = 'projects'
     id = Column(UUID(as_uuid=True), primary_key=True, nullable=False,
                 default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey(
-        'users.id', ondelete='CASCADE'), nullable=False)
+    username = Column(String, ForeignKey(
+        'users.username', ondelete='CASCADE'), nullable=False)
     title = Column(String, nullable=False)
-    content = Column(String, nullable=False)
-    category = Column(String, nullable=False)
-    image = Column(String, nullable=False)
+    zip_code = Column(Integer,nullable=False)
+    cost = Column(Float(precision=2),nullable=False)
+    done = Column(Boolean, default=False)
+    deadline = Column(DateTime,nullable=False)
     created_at = Column(TIMESTAMP(timezone=True),
                         nullable=False, server_default=text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True),
