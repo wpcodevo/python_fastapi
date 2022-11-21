@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get('/', response_model=schemas.ListProjectResponse)
-def get_projects(db: Session = Depends(get_db), limit: int = 10, page: int = 1, search: str = '', user_id: str = Depends(require_user)):
+def get_projects(db: Session = Depends(get_db), limit: int = 10, page: int = 1, search: str = '', username: str = Depends(require_user)):
     skip = (page - 1) * limit
 
     projects = db.query(models.Project).group_by(models.Project.id).filter(
@@ -19,6 +19,7 @@ def get_projects(db: Session = Depends(get_db), limit: int = 10, page: int = 1, 
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=schemas.ProjectResponse)
 def create_project(project: schemas.CreateProjectSchema, db: Session = Depends(get_db), owner_username: str = Depends(require_user)):
+    print(owner_username)
     project.username = owner_username
     new_project = models.Project(**project.dict())
     db.add(new_project)

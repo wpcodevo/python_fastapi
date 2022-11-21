@@ -21,7 +21,7 @@ app.add_middleware(
 
 app.include_router(auth.router, tags=['Auth'], prefix='/api/auth')
 app.include_router(user.router, tags=['Users'], prefix='/api/users')
-app.include_router(project.router, tags=['Posts'], prefix='/api/projects')
+app.include_router(project.router, tags=['Projects'], prefix='/api/projects')
 
 
 @app.get('/api/healthchecker')

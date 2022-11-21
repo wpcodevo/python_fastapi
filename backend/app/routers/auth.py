@@ -58,11 +58,11 @@ def login(payload: schemas.LoginUserSchema, response: Response, db: Session = De
 
     # Create access token
     access_token = Authorize.create_access_token(
-        subject=str(user.id), expires_time=int(time.time()+ACCESS_TOKEN_EXPIRES_IN))
+        subject=str(user.username), expires_time=int(time.time()+ACCESS_TOKEN_EXPIRES_IN))
 
     # Create refresh token
     refresh_token = Authorize.create_refresh_token(
-        subject=str(user.id), expires_time=int(time.time()+REFRESH_TOKEN_EXPIRES_IN))
+        subject=str(user.username), expires_time=int(time.time()+REFRESH_TOKEN_EXPIRES_IN))
     
     token_response={'status': 'success','user':user.username ,'token':{'access_token':access_token,'refresh_token':refresh_token}}
   
