@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status, APIRouter, Response
 from ..database import get_db
 from app.oauth2 import require_user
+import requests
+import json
 
 router = APIRouter()
 
@@ -44,13 +46,24 @@ def update_project(id: str, project: schemas.UpdateProjectSchema, db: Session = 
     return updated_project
 
 
-@router.get('/{id}', response_model=schemas.ProjectResponse)
+@router.get('/{id}', response_model=schemas.ProjectResponseCep)
 def get_project(id: str, db: Session = Depends(get_db), username: str = Depends(require_user)):
     project = db.query(models.Project).filter(models.Project.id == id).first()
     if not project:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"No project with this id: {id} found")
-    return project
+    
+    url_cep='http://viacep.com.br/ws/{0}/json/'.format(project.zip_code)
+    try:
+        data = requests.get(url_cep).json()
+        print(data)
+        project.cidade=data["localidade"]
+        project.uf=data["uf"]
+    except:
+        project.cidade=""
+        project.uf=""
+    finally:
+        return project
 
 
 @router.delete('/{id}')

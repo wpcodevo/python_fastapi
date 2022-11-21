@@ -58,11 +58,11 @@ def login(payload: schemas.LoginUserSchema, response: Response, db: Session = De
 
     # Create access token
     access_token = Authorize.create_access_token(
-        subject=str(user.username), expires_time=int(time.time()+ACCESS_TOKEN_EXPIRES_IN))
+        subject=str(user.username), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
 
     # Create refresh token
     refresh_token = Authorize.create_refresh_token(
-        subject=str(user.username), expires_time=int(time.time()+REFRESH_TOKEN_EXPIRES_IN))
+        subject=str(user.username), expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN))
     
     token_response={'status': 'success','user':user.username ,'token':{'access_token':access_token,'refresh_token':refresh_token}}
   
@@ -93,11 +93,11 @@ def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Dep
                                 detail='The user belonging to this token no logger exist')
         # Create access token
         access_token = Authorize.create_access_token(
-            subject=str(user.username), expires_time=int(time.time()+ACCESS_TOKEN_EXPIRES_IN))
+            subject=str(user.username), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
 
         # Create refresh token
         refresh_token = Authorize.create_refresh_token(
-            subject=str(user.username), expires_time=int(time.time()+REFRESH_TOKEN_EXPIRES_IN))
+            subject=str(user.username), expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN))
         token_response={'status': 'success','user':user.username ,'token':{'access_token':access_token,'refresh_token':refresh_token}}
     except Exception as e:
         error = e.__class__.__name__

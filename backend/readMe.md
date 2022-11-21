@@ -6,6 +6,8 @@ pip install "passlib[bcrypt]"
 <br>
 pip install 'fastapi-jwt-auth[asymmetric]'
 <br>
+pip install http3
+<br>
 pip install alembic
 <br>
 alembic init alembic

@@ -55,6 +55,10 @@ class ProjectResponse(ProjectBaseSchema):
     created_at: datetime
     updated_at: datetime
 
+class ProjectResponseCep(ProjectResponse):
+    cidade: str
+    uf: str
+    
 
 class UpdateProjectSchema(BaseModel):
     title: Union[ str , None] = None
