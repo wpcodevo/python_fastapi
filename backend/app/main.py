@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
@@ -26,3 +27,5 @@ app.include_router(project.router, tags=['Posts'], prefix='/api/projects')
 @app.get('/api/healthchecker')
 def root():
     return {'message': 'Hello World'}
+
+    

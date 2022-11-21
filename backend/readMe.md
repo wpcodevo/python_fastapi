@@ -13,3 +13,5 @@ alembic init alembic
 alembic revision --autogenerate -m "creat users table"
 <br>
 alembic upgrade head
+<br>
+Run server: uvicorn app.main:app --host localhost --port 8000 --reload

@@ -1,4 +1,6 @@
 from datetime import timedelta
+import time
+import json
 import hashlib
 from fastapi import APIRouter, Request, Response, status, Depends, HTTPException
 
@@ -36,7 +38,7 @@ async def create_user(payload: schemas.CreateUserSchema, request: Request, db: S
     db.commit()
     db.refresh(new_user)
 
-    return {'status': 'success', 'message': 'Verification token successfully'}
+    return {'status': 'success', 'message': 'User registered successfully'}
 
 
 @router.post('/login')
@@ -56,12 +58,14 @@ def login(payload: schemas.LoginUserSchema, response: Response, db: Session = De
 
     # Create access token
     access_token = Authorize.create_access_token(
-        subject=str(user.id), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
+        subject=str(user.id), expires_time=int(time.time()+ACCESS_TOKEN_EXPIRES_IN))
 
     # Create refresh token
     refresh_token = Authorize.create_refresh_token(
-        subject=str(user.id), expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN))
-
+        subject=str(user.id), expires_time=int(time.time()+REFRESH_TOKEN_EXPIRES_IN))
+    
+    token_response={'status': 'success','user':user.username ,'token':{'access_token':access_token,'refresh_token':refresh_token}}
+  
     # Store refresh and access tokens in cookie
     response.set_cookie('access_token', access_token, ACCESS_TOKEN_EXPIRES_IN * 60,
                         ACCESS_TOKEN_EXPIRES_IN * 60, '/', None, False, True, 'lax')
@@ -71,24 +75,30 @@ def login(payload: schemas.LoginUserSchema, response: Response, db: Session = De
                         ACCESS_TOKEN_EXPIRES_IN * 60, '/', None, False, False, 'lax')
 
     # Send both access
-    return {'status': 'success', 'access_token': access_token}
+    return token_response
 
 
-@router.get('/refresh')
+@router.post('/refresh')
 def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Depends(), db: Session = Depends(get_db)):
     try:
         Authorize.jwt_refresh_token_required()
 
-        user_id = Authorize.get_jwt_subject()
-        if not user_id:
+        username = Authorize.get_jwt_subject()
+        if not username:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail='Could not refresh access token')
-        user = db.query(models.User).filter(models.User.id == user_id).first()
+        user = db.query(models.User).filter(models.User.username == username).first()
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail='The user belonging to this token no logger exist')
+        # Create access token
         access_token = Authorize.create_access_token(
-            subject=str(user.id), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN))
+            subject=str(user.username), expires_time=int(time.time()+ACCESS_TOKEN_EXPIRES_IN))
+
+        # Create refresh token
+        refresh_token = Authorize.create_refresh_token(
+            subject=str(user.username), expires_time=int(time.time()+REFRESH_TOKEN_EXPIRES_IN))
+        token_response={'status': 'success','user':user.username ,'token':{'access_token':access_token,'refresh_token':refresh_token}}
     except Exception as e:
         error = e.__class__.__name__
         if error == 'MissingTokenError':
@@ -99,12 +109,13 @@ def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Dep
 
     response.set_cookie('access_token', access_token, ACCESS_TOKEN_EXPIRES_IN * 60,
                         ACCESS_TOKEN_EXPIRES_IN * 60, '/', None, False, True, 'lax')
+    
     response.set_cookie('logged_in', 'True', ACCESS_TOKEN_EXPIRES_IN * 60,
                         ACCESS_TOKEN_EXPIRES_IN * 60, '/', None, False, False, 'lax')
-    return {'access_token': access_token}
+    return token_response
 
 
-@router.get('/logout', status_code=status.HTTP_200_OK)
+@router.post('/logout', status_code=status.HTTP_200_OK)
 def logout(response: Response, Authorize: AuthJWT = Depends(), user_id: str = Depends(oauth2.require_user)):
     Authorize.unset_jwt_cookies()
     response.set_cookie('logged_in', '', -1)

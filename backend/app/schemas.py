@@ -19,7 +19,7 @@ class CreateUserSchema(UserBaseSchema):
     passwordConfirm: str
     
 class LoginUserSchema(BaseModel):
-    usernamel: str
+    username: str
     password: constr(min_length=8)
 
 
