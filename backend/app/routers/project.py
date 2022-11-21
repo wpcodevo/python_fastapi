@@ -53,7 +53,11 @@ def get_project(id: str, db: Session = Depends(get_db), username: str = Depends(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f"No project with this id: {id} found")
     
-    url_cep='http://viacep.com.br/ws/{0}/json/'.format(project.zip_code)
+    zip_code=str(project.zip_code)
+    l=8-len(zip_code)
+    if l>0:
+        zip_code = '0'*l+zip_code 
+    url_cep='http://viacep.com.br/ws/{0}/json/'.format(zip_code)
     try:
         data = requests.get(url_cep).json()
         print(data)

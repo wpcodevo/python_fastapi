@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import axios from "axios";
 import {Navigate} from "react-router-dom";
+import Dashboard from "./Dashboard";
 
 export const Home = () => {
     const [name, setName] = useState('');
@@ -35,10 +36,8 @@ export const Home = () => {
     }
 
     return <div className="form-signin mt-5 text-center">
-        <h3>Hi {name}</h3>
+        <Dashboard/>
 
-        <a href="javascript:void(0)" className="btn btn-lg btn-primary"
-           onClick={logout}
-        >Logout</a>
+        <a href="javascript:void(0)" className="btn btn-lg btn-primary" onClick={logout}>Logout</a>
     </div>
 }
