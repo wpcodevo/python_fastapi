@@ -38,7 +38,8 @@ def update_post(id: str, post: schemas.UpdatePostSchema, db: Session = Depends(g
     if updated_post.user_id != uuid.UUID(user_id):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='You are not allowed to perform this action')
-    post_query.update(post.dict(), synchronize_session=False)
+    post.user_id = user_id
+    post_query.update(post.dict(exclude_unset=True), synchronize_session=False)
     db.commit()
     return updated_post
 
@@ -60,7 +61,7 @@ def delete_post(id: str, db: Session = Depends(get_db), user_id: str = Depends(r
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f'No post with this id: {id} found')
 
-    if post.owner_id != user_id:
+    if str(post.user_id) != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='You are not allowed to perform this action')
     post_query.delete(synchronize_session=False)
